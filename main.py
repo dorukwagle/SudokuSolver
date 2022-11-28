@@ -5,12 +5,13 @@ total_rows = 9
 total_cols = 9
 
 
+# method to print the puzzle in the terminal
 def print_puzzle(puzzle):
     for row in puzzle:
         print(*[value if value else 0 for value in row])
 
 
-# check whether the given number is allowed in the given row/column
+# check whether the given number is allowed in the given row/column i.e. cell
 def check_number(puzzle, row, column, number):
     # if the number is 0 do not check it
     if not number:
@@ -34,6 +35,7 @@ def check_number(puzzle, row, column, number):
     return True
 
 
+# check if the given puzzle is valid i.e. if the numbers are repeated in the row or column
 def validate_puzzle(puzzle):
     for i in range(total_rows):
         for j in range(total_cols):
@@ -43,10 +45,16 @@ def validate_puzzle(puzzle):
     return True
 
 
-def defocus(c):
+# called by the class to remove the focus from combobox
+def remove_focus(c):
     current = c.get()
     c.set("")
     c.set(current)
+
+
+# start solving the given puzzle
+def solve_puzzle(puzzle):
+    pass
 
 
 class Puzzle(ttk.Frame):
@@ -74,7 +82,7 @@ class Puzzle(ttk.Frame):
                                     width=3, font=("", 20, "bold", "italic"))
                 cell.grid(row=row, column=col)
                 cell.bind("<Button>", lambda e: self.err.config(text=""))
-                cell.bind("<<ComboboxSelected>>", lambda e, c=cell: defocus(c))
+                cell.bind("<<ComboboxSelected>>", lambda e, c=cell: remove_focus(c))
                 self.refer_holder[-1].append(cell)
 
         ttk.Label(control_frame, text="Fill the Puzzle to Solve", font=("", 13, "bold", "italic")) \
@@ -115,6 +123,7 @@ class Solver(ttk.Frame):
         base_frame = ttk.Frame(self)
         base_frame.pack()
         self.puzzle = puzzle
+        self.parent = parent
 
         puzzle_frame = ttk.Frame(base_frame)
         # puzzle_frame.grid_propagate(False)
@@ -142,25 +151,47 @@ class Solver(ttk.Frame):
                 self.refer_holder[-1].append(cell)
                 cell.bind("<Button-3>", lambda e, c=cell: c.set(""))
                 cell.bind("<Button>", lambda e: self.message.config(text=""))
-                cell.bind("<<ComboboxSelected>>", lambda e, c=cell: defocus(c))
+                cell.bind("<<ComboboxSelected>>", lambda e, c=cell: remove_focus(c))
         # now add control buttons
         Button(control_frame, text="Reset All", font=("", 15, "bold", "italic"), command=self.reset_all) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
-        Button(control_frame, text="Solve From Here", font=("", 15, "bold", "italic"))\
+        Button(control_frame, text="Solve From Here", font=("", 15, "bold", "italic")) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
-        Button(control_frame, text="Solve From Start", font=("", 15, "bold", "italic"))\
+        Button(control_frame, text="Solve From Start", font=("", 15, "bold", "italic")) \
             .pack(fill="x", expand=True)
+        ttk.Label(control_frame, font=("", 10)).pack()
+        Button(control_frame, text="Back", font=("", 15, "bold", "italic"),
+               command=self.goto_home).pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
         self.message = ttk.Label(control_frame, text="", font=("", 15, "bold", "italic"), foreground="green")
         self.message.pack(fill="x", expand=True)
+
+    def goto_home(self):
+        self.destroy()
+        Puzzle(self.parent).pack()
 
     def reset_all(self, *_):
         for row in self.refer_holder:
             for cell in row:
                 if str(cell["state"]) != "disabled":
                     cell.set("")
+
+    # method to solve the puzzle
+    def solve_from_start(self):
+        solution = solve_puzzle(self.numbers_holder)
+        self.display_solution(solution)
+
+    # method to solve puzzle from the point of users solution
+    def solve_from_here(self):
+        pass
+
+    # method to display solved puzzle in the number box
+    def display_solution(self, solution):
+        for i in range(total_rows):
+            for j in range(total_cols):
+                self.refer_holder[i][j].set(solution[i][j])
 
 
 tk = Tk()
