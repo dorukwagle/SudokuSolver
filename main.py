@@ -1,5 +1,4 @@
-from tkinter import ttk
-from tkinter import Button, Tk
+from tkinter import ttk, Button, Tk
 
 total_rows = 9
 total_cols = 9
@@ -24,12 +23,11 @@ def check_number(puzzle, row, column, number):
         if num == number:
             return False
     # check if the number exists in the column
-    col = [row[column] for row in puzzle]
-    for ind, num in enumerate(col):
+    for i in range(total_cols):
         # since the column is converted into row
-        if ind == row:
+        if i == row:
             continue
-        if num == number:
+        if puzzle[i][column] == number:
             return False
     # since the number is allowed the given position
     return True
@@ -54,7 +52,17 @@ def remove_focus(c):
 
 # start solving the given puzzle
 def solve_puzzle(puzzle):
-    pass
+    solution = puzzle
+
+    # iterate over the puzzle and solve each row at a time
+    for row in range(total_rows):
+        # solve the row
+        for col in range(total_cols):
+            # try number from 1 to 9
+            pass
+    return solution
+
+
 
 
 class Puzzle(ttk.Frame):
@@ -156,6 +164,9 @@ class Solver(ttk.Frame):
         Button(control_frame, text="Reset All", font=("", 15, "bold", "italic"), command=self.reset_all) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
+        Button(control_frame, text="Check Status", font=("", 15, "bold", "italic"), command=self.check_status) \
+            .pack(fill="x", expand=True)
+        ttk.Label(control_frame, font=("", 10)).pack()
         Button(control_frame, text="Solve From Here", font=("", 15, "bold", "italic")) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
@@ -182,6 +193,10 @@ class Solver(ttk.Frame):
     def solve_from_start(self):
         solution = solve_puzzle(self.numbers_holder)
         self.display_solution(solution)
+
+    # check if the current solution of user is valid and whether it can be solved further
+    def check_status(self):
+        pass
 
     # method to solve puzzle from the point of users solution
     def solve_from_here(self):
