@@ -1,3 +1,4 @@
+import copy
 from tkinter import ttk, Button, Tk
 
 total_rows = 9
@@ -29,6 +30,12 @@ def check_number(puzzle, row, column, number):
             continue
         if puzzle[i][column] == number:
             return False
+    # check for the repeatation in the nonet
+    nonet_x, nonet_y = 3 * (row // 3), 3 * (column // 3)
+    for i in range(nonet_x, nonet_x + 3):
+        for j in range(nonet_y, nonet_y + 3):
+            if puzzle[i][j] == number:
+                return False
     # since the number is allowed the given position
     return True
 
@@ -51,18 +58,27 @@ def remove_focus(c):
 
 
 # start solving the given puzzle
-def solve_puzzle(puzzle):
-    solution = puzzle
-
+def solve_puzzle(solution, row=0, col=0):
     # iterate over the puzzle and solve each row at a time
-    for row in range(total_rows):
+    for row in range(row, total_rows):
         # solve the row
-        for col in range(total_cols):
+        for col in range(col, total_cols):
             # try number from 1 to 9
-            pass
-    return solution
-
-
+            if solution[row][col]:
+                continue
+            for num in range(1, 10):
+                if check_number(solution, row, col, str(num)):
+                    solution[row][col] = str(num)
+                    # check if the row or column is 8. that means the row, column or puzzle is solved
+                    if row == 8:
+                        return True
+                    #  now check if the puzzle gets solved using this permutation
+                    if solve_puzzle(solution, row, col):
+                        return True
+                    # now that the puzzle isn't solved using this possibility,
+                    # reset the value at this cell to backtrack
+                    solution[row][col] = ''
+    return False
 
 
 class Puzzle(ttk.Frame):
@@ -127,7 +143,6 @@ class Solver(ttk.Frame):
         super().__init__(parent)
         # create a list to hold reference to all combobox
         self.refer_holder = []
-        self.numbers_holder = []
         base_frame = ttk.Frame(self)
         base_frame.pack()
         self.puzzle = puzzle
@@ -170,7 +185,7 @@ class Solver(ttk.Frame):
         Button(control_frame, text="Solve From Here", font=("", 15, "bold", "italic")) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
-        Button(control_frame, text="Solve From Start", font=("", 15, "bold", "italic")) \
+        Button(control_frame, text="Solve From Start", font=("", 15, "bold", "italic"), command=self.solve_from_start) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
         Button(control_frame, text="Back", font=("", 15, "bold", "italic"),
@@ -191,8 +206,12 @@ class Solver(ttk.Frame):
 
     # method to solve the puzzle
     def solve_from_start(self):
-        solution = solve_puzzle(self.numbers_holder)
-        self.display_solution(solution)
+        solved_puzzle = copy.deepcopy(self.puzzle)
+        solve_puzzle(solved_puzzle)
+        if not solved_puzzle:
+            self.message.config(text="Solution does not exists")
+            return
+        self.display_solution(solved_puzzle)
 
     # check if the current solution of user is valid and whether it can be solved further
     def check_status(self):
