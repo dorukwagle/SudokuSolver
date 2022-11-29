@@ -47,8 +47,6 @@ def validate_puzzle(puzzle):
     return True
 
 
-
-
 def is_solved(puzzle, row, col):
     if puzzle[row][col]:
         return True
@@ -114,6 +112,23 @@ def remove_focus(c):
     c.set(current)
 
 
+# read from the puzzle board
+def read_board(board):
+    board_data = []
+    for row in board:
+        board_data.append([])
+        for col in row:
+            board_data[-1].append(col.get())
+    return board_data
+
+
+# method to display solved puzzle in the number box
+def display_in_board(board_reference, solution):
+    for i in range(total_rows):
+        for j in range(total_cols):
+            board_reference[i][j].set(solution[i][j])
+
+
 class Puzzle(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
@@ -150,16 +165,17 @@ class Puzzle(ttk.Frame):
         ttk.Label(control_frame, text="", font=("", 15)).pack(fill="x")
 
         Button(control_frame, text="Reset All", font=("", 15, "bold", "italic"),
-               command=lambda: reset_all(self.refer_holder))\
+               command=lambda: reset_all(self.refer_holder)) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, text="", font=("", 15)).pack(fill="x")
 
         Button(control_frame, text="Save Puzzle", font=("", 15, "bold", "italic"),
-               command=lambda: reset_all(self.refer_holder))\
+               command=self.save_puzzle) \
             .pack(fill="x")
         ttk.Label(control_frame, text="", font=("", 15)).pack(fill="x")
 
-        saves = ttk.Combobox(control_frame, values=self.saves.get_puzzle_names())
+        saves = ttk.Combobox(control_frame, values=self.saves.get_puzzle_names(),
+                             state="readonly", font=("", 12, "bold", "italic"), takefocus=0)
         saves.set("<<Load Saved Puzzles>>")
         saves.pack(fill="x")
         saves.bind("<<ComboboxSelected>>", lambda e, c=saves: self.load_saved_puzzle(c))
@@ -189,8 +205,17 @@ class Puzzle(ttk.Frame):
         Solver(self.parent, self.numbers_holder).pack()
         self.destroy()
 
-    def load_saved_puzzles(self, combobox):
-        puzzle = self.saves.get_puzzle(combobox.current())
+    def load_saved_puzzle(self, combobox):
+        puzzle = self.saves.get_puzzle(combobox.get())
+        display_in_board(self.refer_holder, puzzle)
+
+    def save_puzzle(self):
+        puzzle = read_board(self.refer_holder)
+        if validate_puzzle(puzzle):
+            self.saves.write(puzzle)
+            self.err.config(text="Puzzle Saved", foreground="green")
+            return
+        self.err.config(text="invalid puzzle", foreground="red")
 
 
 class Solver(ttk.Frame):
@@ -215,7 +240,6 @@ class Solver(ttk.Frame):
             self.refer_holder.append([])
             for col in range(total_cols):
                 # check if there is number in the given cell
-                args = {}
                 text = ""
                 if not self.puzzle[row][col]:
                     args = dict(values=list(range(1, 10)), state="readonly", takefocus=0, font=("", 20, "italic"))
@@ -255,15 +279,6 @@ class Solver(ttk.Frame):
 
     # reset all the cells to initial state
 
-    # read from the puzzle board
-    def __read_board(self):
-        board_data = []
-        for row in self.refer_holder:
-            board_data.append([])
-            for col in row:
-                board_data[-1].append(col.get())
-        return board_data
-
     # method to solve the puzzle
     def solve_from_start(self):
         solved_puzzle = copy.deepcopy(self.puzzle)
@@ -271,12 +286,12 @@ class Solver(ttk.Frame):
         if not solved:
             self.message.config(text="Solution does not exists", foreground="red")
             return
-        self.display_solution(solved_puzzle)
+        display_in_board(self.refer_holder, solved_puzzle)
 
     # check if the current solution of user is valid and whether it can be solved further
     def check_status(self):
         # read board data first
-        data = self.__read_board()
+        data = read_board(self.refer_holder)
         # validate the board first
         if not validate_puzzle(data):
             self.message.config(text="Invalid: value repeated", foreground="red")
@@ -288,7 +303,7 @@ class Solver(ttk.Frame):
 
     # method to solve puzzle continuing from users solution
     def solve_from_here(self):
-        half_puzzle = self.__read_board()
+        half_puzzle = read_board(self.refer_holder)
         solved = solve_puzzle(half_puzzle)
         if not validate_puzzle(half_puzzle):
             self.message.config(text="Invalid: value repeated")
@@ -296,23 +311,25 @@ class Solver(ttk.Frame):
         if not solved:
             self.message.config(text="Unsolvable...!!!", foreground="red")
             return
-        self.display_solution(half_puzzle)
-
-    # method to display solved puzzle in the number box
-    def display_solution(self, solution):
-        for i in range(total_rows):
-            for j in range(total_cols):
-                self.refer_holder[i][j].set(solution[i][j])
+        display_in_board(self.refer_holder, half_puzzle)
 
 
 tk = Tk()
 # configure theme for the board
 style = ttk.Style()
-style.configure("dark.TCombobox", background="silver")
-style.map('dark.TCombobox', fieldbackground=[('readonly', 'silver')])
-style.map('dark.TCombobox', selectbackground=[('readonly', 'silver')])
-style.configure("light.TCombobox", background="white")
-style.map('light.TCombobox', fieldbackground=[('readonly', 'white')])
-style.map('light.TCombobox', selectbackground=[('readonly', 'white')])
+light = "white"
+dark = "silver"
+style.configure("dark.TCombobox", background=dark)
+style.map('dark.TCombobox',
+          fieldbackground=[('readonly', dark), ('disabled', dark)],
+          selectbackground=[('readonly', dark)],
+          background=[('readonly', dark), ('disabled', dark)]
+          )
+style.configure("light.TCombobox", background=light)
+style.map('light.TCombobox',
+          fieldbackground=[('readonly', light), ('disabled', light)],
+          selectbackground=[('readonly', light)],
+          background=[('readonly', light), ('disabled', light)]
+          )
 Puzzle(tk).pack()
 tk.mainloop()
