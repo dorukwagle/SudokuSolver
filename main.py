@@ -193,7 +193,7 @@ class Solver(ttk.Frame):
         Button(control_frame, text="Check Status", font=("", 15, "bold", "italic"), command=self.check_status) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
-        Button(control_frame, text="Solve From Here", font=("", 15, "bold", "italic")) \
+        Button(control_frame, text="Solve From Here", font=("", 15, "bold", "italic"), command=self.solve_from_here) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
         Button(control_frame, text="Solve From Start", font=("", 15, "bold", "italic"), command=self.solve_from_start) \
@@ -209,28 +209,55 @@ class Solver(ttk.Frame):
         self.destroy()
         Puzzle(self.parent).pack()
 
+    # reset all the cells to initial state
     def reset_all(self, *_):
         for row in self.refer_holder:
             for cell in row:
                 if str(cell["state"]) != "disabled":
                     cell.set("")
 
+    # read from the puzzle board
+    def __read_board(self):
+        board_data = []
+        for row in self.refer_holder:
+            board_data.append([])
+            for col in row:
+                board_data[-1].append(col.get())
+        return board_data
+
     # method to solve the puzzle
     def solve_from_start(self):
         solved_puzzle = copy.deepcopy(self.puzzle)
-        solve_puzzle(solved_puzzle)
-        if not solved_puzzle:
-            self.message.config(text="Solution does not exists")
+        solved = solve_puzzle(solved_puzzle)
+        if not solved:
+            self.message.config(text="Solution does not exists", foreground="red")
             return
         self.display_solution(solved_puzzle)
 
     # check if the current solution of user is valid and whether it can be solved further
     def check_status(self):
-        pass
+        # read board data first
+        data = self.__read_board()
+        # validate the board first
+        if not validate_puzzle(data):
+            self.message.config(text="Invalid: value repeated", foreground="red")
+            return
+        if not solve_puzzle(data):
+            self.message.config(text="Cannot be Solved", foreground="red")
+            return
+        self.message.config(text="Can be Solved", foreground="green")
 
-    # method to solve puzzle from the point of users solution
+    # method to solve puzzle continuing from users solution
     def solve_from_here(self):
-        pass
+        half_puzzle = self.__read_board()
+        solved = solve_puzzle(half_puzzle)
+        if not validate_puzzle(half_puzzle):
+            self.message.config(text="Invalid: value repeated")
+            return
+        if not solved:
+            self.message.config(text="Unsolvable...!!!", foreground="red")
+            return
+        self.display_solution(half_puzzle)
 
     # method to display solved puzzle in the number box
     def display_solution(self, solution):
