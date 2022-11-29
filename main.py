@@ -57,27 +57,36 @@ def remove_focus(c):
     c.set(current)
 
 
+def is_solved(puzzle, row, col):
+    if puzzle[row][col]:
+        return True
+    return False
+
+
 # start solving the given puzzle
 def solve_puzzle(solution, row=0, col=0):
-    # iterate over the puzzle and solve each row at a time
-    for row in range(row, total_rows):
-        # solve the row
-        for col in range(col, total_cols):
-            # try number from 1 to 9
-            if solution[row][col]:
-                continue
-            for num in range(1, 10):
-                if check_number(solution, row, col, str(num)):
-                    solution[row][col] = str(num)
-                    # check if the row or column is 8. that means the row, column or puzzle is solved
-                    if row == 8:
-                        return True
-                    #  now check if the puzzle gets solved using this permutation
-                    if solve_puzzle(solution, row, col):
-                        return True
-                    # now that the puzzle isn't solved using this possibility,
-                    # reset the value at this cell to backtrack
-                    solution[row][col] = ''
+    # check if the row or column is 8. that means the row, column or puzzle is solved
+    if row == 8 and col == 9:
+        return True
+    if col == 9:
+        # a single row is solved, move the control to hte next row
+        row += 1
+        col = 0
+    # iterate over the puzzle and backtract
+    for num in range(1, 10):
+        # check if the cell already contains a number
+        if is_solved(solution, row, col):
+            solve_puzzle(solution, row, col+1)
+
+        if check_number(solution, row, col, str(num)):
+            solution[row][col] = str(num)
+
+            #  now check if the puzzle gets solved using this permutation
+            if solve_puzzle(solution, row, col+1):
+                return True
+            # now that the puzzle isn't solved using this possibility,
+            # reset the value at this cell to backtrack
+            solution[row][col] = ''
     return False
 
 
