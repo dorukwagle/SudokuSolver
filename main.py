@@ -1,14 +1,9 @@
 import copy
 from tkinter import ttk, Button, Tk
+from saves import Saves
 
 total_rows = 9
 total_cols = 9
-
-
-# method to print the puzzle in the terminal
-def print_puzzle(puzzle):
-    for row in puzzle:
-        print(*[value if value else 0 for value in row])
 
 
 # check whether the given number is allowed in the given row/column i.e. cell
@@ -52,11 +47,6 @@ def validate_puzzle(puzzle):
     return True
 
 
-# called by the class to remove the focus from combobox
-def remove_focus(c):
-    current = c.get()
-    c.set("")
-    c.set(current)
 
 
 def is_solved(puzzle, row, col):
@@ -92,6 +82,38 @@ def solve_puzzle(solution, row=0, col=0):
     return False
 
 
+# define the color the the nonet in the board
+def get_nonet_style(row, col):
+    # 1 = r0, c0, = grey | # 3 = r0, c2, = grey | # 5 = r1, c1, = grey | # 7 = r2, c0, = grey | # 9 = r2, c2, = grey
+    # 2 = r0, c1, = white | # 4 = r1, c0, = white | # 6 = r1, c2, = white | # 8 = r2, c1, = white
+    row = row // 3
+    col = col // 3
+    if (
+            (row == 0 and col == 0) or
+            (row == 0 and col == 2) or
+            (row == 1 and col == 1) or
+            (row == 2 and col == 0) or
+            (row == 2 and col == 2)
+    ):
+        return "dark.TCombobox"
+    return "light.TCombobox"
+
+
+# function that resets all the boxes in the board
+def reset_all(references, *_):
+    for row in references:
+        for cell in row:
+            if str(cell["state"]) != "disabled":
+                cell.set("")
+
+
+# called by the class to remove the focus from combobox
+def remove_focus(c):
+    current = c.get()
+    c.set("")
+    c.set(current)
+
+
 class Puzzle(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
@@ -101,6 +123,8 @@ class Puzzle(ttk.Frame):
         self.numbers_holder = []
         base_frame = ttk.Frame(self)
         base_frame.pack()
+        # initialize database
+        self.saves = Saves()
 
         puzzle_frame = ttk.Frame(base_frame)
         # puzzle_frame.grid_propagate(False)
@@ -114,20 +138,37 @@ class Puzzle(ttk.Frame):
             self.refer_holder.append([])
             for col in range(total_cols):
                 cell = ttk.Combobox(puzzle_frame, values=list(range(1, 10)), state="readonly", takefocus=0,
-                                    width=3, font=("", 20, "bold", "italic"))
+                                    width=3, font=("", 20, "bold", "italic"), style=get_nonet_style(row, col))
                 cell.grid(row=row, column=col)
                 cell.bind("<Button>", lambda e: self.err.config(text=""))
+                cell.bind("<Button-3>", lambda e, c=cell: c.set("") if str(c["state"]) != "disabled" else None)
                 cell.bind("<<ComboboxSelected>>", lambda e, c=cell: remove_focus(c))
                 self.refer_holder[-1].append(cell)
 
         ttk.Label(control_frame, text="Fill the Puzzle to Solve", font=("", 13, "bold", "italic")) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, text="", font=("", 15)).pack(fill="x")
+
+        Button(control_frame, text="Reset All", font=("", 15, "bold", "italic"),
+               command=lambda: reset_all(self.refer_holder))\
+            .pack(fill="x", expand=True)
+        ttk.Label(control_frame, text="", font=("", 15)).pack(fill="x")
+
+        Button(control_frame, text="Save Puzzle", font=("", 15, "bold", "italic"),
+               command=lambda: reset_all(self.refer_holder))\
+            .pack(fill="x")
+        ttk.Label(control_frame, text="", font=("", 15)).pack(fill="x")
+
+        saves = ttk.Combobox(control_frame, values=self.saves.get_puzzle_names())
+        saves.set("<<Load Saved Puzzles>>")
+        saves.pack(fill="x")
+        saves.bind("<<ComboboxSelected>>", lambda e, c=saves: self.load_saved_puzzle(c))
+        ttk.Label(control_frame, text="", font=("", 15)).pack(fill="x")
         # add a button to confirm the puzzle
         btn = Button(control_frame, text="Confirm Puzzle", font=("", 15, "bold", "italic"))
 
         btn.bind("<ButtonRelease>", self.confirm)
-        btn.pack(fill="x", expand=True, ipadx=20, ipady=20)
+        btn.pack(side="bottom", fill="x", ipadx=20, ipady=20)
 
         # display error message
         self.err = ttk.Label(control_frame, text="", font=("", 13, "bold"), foreground="red")
@@ -147,6 +188,9 @@ class Puzzle(ttk.Frame):
         # display new page
         Solver(self.parent, self.numbers_holder).pack()
         self.destroy()
+
+    def load_saved_puzzles(self, combobox):
+        puzzle = self.saves.get_puzzle(combobox.current())
 
 
 class Solver(ttk.Frame):
@@ -179,15 +223,15 @@ class Solver(ttk.Frame):
                     args = dict(values=list(range(1, 10)), state="disabled", takefocus=0,
                                 font=("", 20, "bold", "italic"), foreground="brown")
                     text = self.puzzle[row][col]
-                cell = ttk.Combobox(puzzle_frame, width=3, **args)
+                cell = ttk.Combobox(puzzle_frame, width=3, **args, style=get_nonet_style(row, col))
                 cell.grid(row=row, column=col)
                 cell.set(text)
                 self.refer_holder[-1].append(cell)
-                cell.bind("<Button-3>", lambda e, c=cell: c.set(""))
+                cell.bind("<Button-3>", lambda e, c=cell: c.set("") if str(c["state"]) != "disabled" else None)
                 cell.bind("<Button>", lambda e: self.message.config(text=""))
                 cell.bind("<<ComboboxSelected>>", lambda e, c=cell: remove_focus(c))
         # now add control buttons
-        Button(control_frame, text="Reset All", font=("", 15, "bold", "italic"), command=self.reset_all) \
+        Button(control_frame, text="Reset All", font=("", 15, "bold", "italic"), command=reset_all) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
         Button(control_frame, text="Check Status", font=("", 15, "bold", "italic"), command=self.check_status) \
@@ -210,11 +254,6 @@ class Solver(ttk.Frame):
         Puzzle(self.parent).pack()
 
     # reset all the cells to initial state
-    def reset_all(self, *_):
-        for row in self.refer_holder:
-            for cell in row:
-                if str(cell["state"]) != "disabled":
-                    cell.set("")
 
     # read from the puzzle board
     def __read_board(self):
@@ -267,5 +306,13 @@ class Solver(ttk.Frame):
 
 
 tk = Tk()
+# configure theme for the board
+style = ttk.Style()
+style.configure("dark.TCombobox", background="silver")
+style.map('dark.TCombobox', fieldbackground=[('readonly', 'silver')])
+style.map('dark.TCombobox', selectbackground=[('readonly', 'silver')])
+style.configure("light.TCombobox", background="white")
+style.map('light.TCombobox', fieldbackground=[('readonly', 'white')])
+style.map('light.TCombobox', selectbackground=[('readonly', 'white')])
 Puzzle(tk).pack()
 tk.mainloop()
