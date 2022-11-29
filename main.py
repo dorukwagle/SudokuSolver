@@ -34,6 +34,8 @@ def check_number(puzzle, row, column, number):
     nonet_x, nonet_y = 3 * (row // 3), 3 * (column // 3)
     for i in range(nonet_x, nonet_x + 3):
         for j in range(nonet_y, nonet_y + 3):
+            if i == row and j == column:
+                continue
             if puzzle[i][j] == number:
                 return False
     # since the number is allowed the given position
@@ -76,13 +78,13 @@ def solve_puzzle(solution, row=0, col=0):
     for num in range(1, 10):
         # check if the cell already contains a number
         if is_solved(solution, row, col):
-            solve_puzzle(solution, row, col+1)
+            return solve_puzzle(solution, row, col + 1)
 
         if check_number(solution, row, col, str(num)):
             solution[row][col] = str(num)
 
             #  now check if the puzzle gets solved using this permutation
-            if solve_puzzle(solution, row, col+1):
+            if solve_puzzle(solution, row, col + 1):
                 return True
             # now that the puzzle isn't solved using this possibility,
             # reset the value at this cell to backtrack
