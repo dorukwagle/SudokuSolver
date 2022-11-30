@@ -255,7 +255,8 @@ class Solver(ttk.Frame):
                 cell.bind("<Button>", lambda e: self.message.config(text=""))
                 cell.bind("<<ComboboxSelected>>", lambda e, c=cell: remove_focus(c))
         # now add control buttons
-        Button(control_frame, text="Reset All", font=("", 15, "bold", "italic"), command=reset_all) \
+        Button(control_frame, text="Reset All", font=("", 15, "bold", "italic"),
+               command=lambda: reset_all(self.refer_holder)) \
             .pack(fill="x", expand=True)
         ttk.Label(control_frame, font=("", 10)).pack()
         Button(control_frame, text="Check Status", font=("", 15, "bold", "italic"), command=self.check_status) \
